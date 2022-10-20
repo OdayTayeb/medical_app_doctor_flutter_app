@@ -1,40 +1,43 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
-import 'package:medical_app/classes/MedicineCategoryInfo.dart';
+import 'package:medical_app/MyColors.dart';
+import 'package:medical_app/classes/MedicineOptionsInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
 import '../../SecureStorage.dart';
 import 'dart:convert';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../../classes/BloodTestInfo.dart';
 import '../../BackEndURL.dart';
 import 'package:vibration/vibration.dart';
 
 
 
-class MedicineCategories extends StatefulWidget {
-  const MedicineCategories({Key? key}) : super(key: key);
+class MedicineOptions extends StatefulWidget {
+  const MedicineOptions({Key? key}) : super(key: key);
 
   @override
-  _MedicineCategoriesState createState() => _MedicineCategoriesState();
+  _MedicineOptionsState createState() => _MedicineOptionsState();
 }
 
-class _MedicineCategoriesState extends State<MedicineCategories> {
+class _MedicineOptionsState extends State<MedicineOptions> {
 
-  List<MedicineCategoryInfo> allCategories = List.empty(growable: true);
+  List<MedicineOptionsInfo> allOptions = List.empty(growable: true);
   bool dataIsFetched = false;
 
   @override
   void initState() {
     super.initState();
-    getAllCategories();
+    getAllOptions();
   }
 
-  Future<void> getAllCategories() async {
-    allCategories.clear();
+  Future<void> getAllOptions() async {
+    allOptions.clear();
     String? token = await storage.read(key: 'token');
     print(token);
     http.Response response = await http.get(
-      Uri.parse( URL+ '/api/category'),
+      Uri.parse( URL+ '/api/option'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Accept': '*/*',
@@ -51,7 +54,8 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
         Map <String,dynamic> oneTest = data[i];
         String id = oneTest['id'].toString();
         String name = oneTest['name'].toString();
-        allCategories.add(new MedicineCategoryInfo(id, name));
+        String comment = oneTest['comment'].toString();
+        allOptions.add(new MedicineOptionsInfo(id, name, comment));
       }
     }
     setState(() {
@@ -63,7 +67,7 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.medicineCategories,style: TextStyle(color: Colors.black),),
+        title: Text(AppLocalizations.of(context)!.medicineOptions,style: TextStyle(color: Colors.black),),
       ),
       body: Container(
           child: dataIsFetched == false ?
@@ -72,36 +76,37 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
           ) :
           RefreshIndicator(
             onRefresh: ()async{
-              await getAllCategories();
+              await getAllOptions();
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(8),
-              itemCount: allCategories.length,
+              itemCount: allOptions.length,
               itemBuilder: (BuildContext context, int index) {
                 return Dismissible(
                   child: MyContainer(
-                    Text(allCategories[index].name,style: TextStyle(fontSize: 20,color: Colors.black,fontWeight: FontWeight.bold)),
-                    SizedBox(),
+                    Text(allOptions[index].name,style: TextStyle(fontSize: 20,color: Colors.black,fontWeight: FontWeight.bold)),
+                    Text(allOptions[index].description,style: TextStyle(fontSize: 15,color: MyGreyColorDarker,fontWeight: FontWeight.bold),overflow: TextOverflow.ellipsis,),
                   ),
                   key: ValueKey(index),
                   background: Container(
-                    color: Colors.green,
+                    color: Colors.amber,
                     margin: EdgeInsets.all(20),
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Icon(
-                          Icons.edit,
+                          Icons.info,
                           color: Colors.white,
                         ),
                         SizedBox(width: 10,),
-                        Text(AppLocalizations.of(context)!.edit,style: TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.bold),),
+                        Text(AppLocalizations.of(context)!.details,style: TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.bold),),
                       ],
                     ),
                   ),
+                  direction: DismissDirection.startToEnd,
                   secondaryBackground: Container(
-                    color: Colors.red,
+                    color: Colors.green,
                     margin: EdgeInsets.all(20),
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
@@ -116,7 +121,6 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
                       ],
                     ),
                   ),
-                  direction: DismissDirection.startToEnd,
                   confirmDismiss: (direction) async {
                     return false;
                   },
@@ -125,10 +129,11 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
                       bool hasVib = await Vibration.hasVibrator() ?? false;
                       if (hasVib)
                         Vibration.vibrate(duration: 100);
-                      await Navigator.pushNamed(context, '/addmedicinecategory',arguments: {
-                        'info': allCategories[index],
+
+                      await Navigator.pushNamed(context, '/medicineoptioninfo',arguments: {
+                        'info': allOptions[index],
                       });
-                      await getAllCategories();
+                      await getAllOptions();
                     }
                   },
                 );
@@ -138,14 +143,12 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
 
       ),
       floatingActionButton: FloatingActionButton.extended(
-        label: Text(AppLocalizations.of(context)!.addNewCategory),
+        label: Text(AppLocalizations.of(context)!.newMedicineOption),
         onPressed: () async {
-          await Navigator.pushNamed(context, '/addmedicinecategory');
-          getAllCategories();
+          await Navigator.pushNamed(context, '/addmedicineoption');
+          getAllOptions();
         },
       ),
     );
   }
-
-
 }

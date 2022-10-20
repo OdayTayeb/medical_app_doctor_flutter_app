@@ -68,6 +68,18 @@
     "medicineCategories": "Medicine Categories",
     "addNewCategory": "Add New Category",
     "enterCategoryName": "Enter Category Name",
-    "categoryInformation": "Category Information"
-
+    "categoryInformation": "Category Information",
+    "medicines" : "Medicines",
+    "newMedicine": "New Medicine",
+    "medicineInformation": "Medicine Information",
+    "commercialName" : "Commercial Name",
+    "category" : "Category",
+    "note": "Note",
+    "medicineName": "Medicine Name",
+    "enter": "Enter",
+    "choose": "Choose",
+    "medicineOptions": "Medicine Options",
+    "newMedicineOption": "New Medicine Option",
+    "medicineOptionInformation": "Medicine Option Information",
+    "optionName": "Option Name"
 }

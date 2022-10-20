@@ -4,13 +4,21 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:medical_app/Screens/Authentication/EditUser.dart';
 import 'package:medical_app/Screens/Authentication/userManager.dart';
 import 'package:medical_app/Screens/MedecineCategories/MedicineCategories.dart';
+import 'package:medical_app/Screens/MedecineCategories/MedicineInformation.dart';
 import 'package:medical_app/Screens/MedecineCategories/addMedicineCategory.dart';
+import 'package:medical_app/Screens/Medicine/Medicines.dart';
+import 'package:medical_app/Screens/Medicine/addMedicine.dart';
+import 'package:medical_app/Screens/MedincineOptions/MedicineOptionInformation.dart';
+import 'package:medical_app/Screens/MedincineOptions/MedicineOptions.dart';
+import 'package:medical_app/Screens/MedincineOptions/addMedicineOption.dart';
 import 'package:medical_app/Screens/RadioGraphTests/RadioGraphTestInformation.dart';
 import 'package:medical_app/Screens/RadioGraphTests/RadiographTests.dart';
 import 'package:medical_app/Screens/RadioGraphTests/addRadiographTest.dart';
 import 'package:medical_app/Screens/bloodTests/BloodTestInformation.dart';
 import 'package:medical_app/Screens/bloodTests/BloodTests.dart';
 import 'package:medical_app/Screens/bloodTests/addBloodTest.dart';
+import 'package:medical_app/classes/MedicineInfo.dart';
+import 'package:medical_app/classes/MedicineOptionsInfo.dart';
 import 'Screens/Authentication/SignUp.dart';
 import 'Screens/Authentication/SignIn.dart';
 
@@ -50,6 +58,12 @@ class MyApp extends StatelessWidget {
         '/edituser': (context) =>EditUser(),
         '/medicinecategories': (context) => MedicineCategories(),
         '/addmedicinecategory': (context) => addMedicineCategory(),
+        '/medicines': (context) => Medicines(),
+        '/addmedicine': (context) => addMedicine(),
+        '/medicineinfo': (context) => MedicineInformation(),
+        '/medicineoptions': (context) => MedicineOptions(),
+        '/addmedicineoption': (context) => addMedicineOption(),
+        '/medicineoptioninfo': (context) => MedicineOptionInformation(),
       },
       initialRoute: '/signin',
       // Theme

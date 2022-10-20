@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:medical_app/MyColors.dart';
 import 'package:medical_app/classes/MedicineCategoryInfo.dart';
+import 'package:medical_app/classes/MedicineInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
 import '../../SecureStorage.dart';
 import 'dart:convert';
@@ -11,30 +13,30 @@ import 'package:vibration/vibration.dart';
 
 
 
-class MedicineCategories extends StatefulWidget {
-  const MedicineCategories({Key? key}) : super(key: key);
+class Medicines extends StatefulWidget {
+  const Medicines({Key? key}) : super(key: key);
 
   @override
-  _MedicineCategoriesState createState() => _MedicineCategoriesState();
+  _MedicinesState createState() => _MedicinesState();
 }
 
-class _MedicineCategoriesState extends State<MedicineCategories> {
+class _MedicinesState extends State<Medicines> {
 
-  List<MedicineCategoryInfo> allCategories = List.empty(growable: true);
+  List<MedicineInfo> allMedicines = List.empty(growable: true);
   bool dataIsFetched = false;
 
   @override
   void initState() {
     super.initState();
-    getAllCategories();
+    getAllMedicines();
   }
 
-  Future<void> getAllCategories() async {
-    allCategories.clear();
+  Future<void> getAllMedicines() async {
+    allMedicines.clear();
     String? token = await storage.read(key: 'token');
     print(token);
     http.Response response = await http.get(
-      Uri.parse( URL+ '/api/category'),
+      Uri.parse( URL+ '/api/drug'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Accept': '*/*',
@@ -50,11 +52,16 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
       for (int i=0;i<data.length;i++){
         Map <String,dynamic> oneTest = data[i];
         String id = oneTest['id'].toString();
-        String name = oneTest['name'].toString();
-        allCategories.add(new MedicineCategoryInfo(id, name));
+        String genericname = oneTest['genericName'].toString();
+        String tradename = oneTest['tradeName'].toString();
+        String note = oneTest['note'].toString();
+        Map <String,dynamic> category = oneTest['category'];
+        String categoryId = category['id'].toString();
+        String categoryName = category['name'].toString();
+        allMedicines.add(new MedicineInfo(id, genericname,tradename,categoryName,categoryId,note));
       }
     }
-    setState(() {
+      setState(() {
       dataIsFetched = true;
     });
   }
@@ -63,7 +70,7 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.medicineCategories,style: TextStyle(color: Colors.black),),
+        title: Text(AppLocalizations.of(context)!.medicines,style: TextStyle(color: Colors.black),),
       ),
       body: Container(
           child: dataIsFetched == false ?
@@ -72,16 +79,16 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
           ) :
           RefreshIndicator(
             onRefresh: ()async{
-              await getAllCategories();
+              await getAllMedicines();
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(8),
-              itemCount: allCategories.length,
+              itemCount: allMedicines.length,
               itemBuilder: (BuildContext context, int index) {
                 return Dismissible(
                   child: MyContainer(
-                    Text(allCategories[index].name,style: TextStyle(fontSize: 20,color: Colors.black,fontWeight: FontWeight.bold)),
-                    SizedBox(),
+                    Text(allMedicines[index].genericName,style: TextStyle(fontSize: 20,color: Colors.black,fontWeight: FontWeight.bold)),
+                    Text(allMedicines[index].tradeName+" \u25CF "+allMedicines[index].category,style: TextStyle(fontSize: 16, color: MyGreyColorDarker))
                   ),
                   key: ValueKey(index),
                   background: Container(
@@ -101,22 +108,22 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
                     ),
                   ),
                   secondaryBackground: Container(
-                    color: Colors.red,
+                    color: Colors.amber,
                     margin: EdgeInsets.all(20),
                     padding: EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text(AppLocalizations.of(context)!.delete,style: TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.bold),),
+                        Text(AppLocalizations.of(context)!.details,style: TextStyle(color: Colors.white,fontSize: 20,fontWeight: FontWeight.bold),),
                         SizedBox(width: 10,),
                         Icon(
-                          Icons.delete,
+                          CupertinoIcons.info_circle_fill,
                           color: Colors.white,
                         ),
                       ],
                     ),
                   ),
-                  direction: DismissDirection.startToEnd,
+                  direction: DismissDirection.horizontal,
                   confirmDismiss: (direction) async {
                     return false;
                   },
@@ -125,10 +132,19 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
                       bool hasVib = await Vibration.hasVibrator() ?? false;
                       if (hasVib)
                         Vibration.vibrate(duration: 100);
-                      await Navigator.pushNamed(context, '/addmedicinecategory',arguments: {
-                        'info': allCategories[index],
-                      });
-                      await getAllCategories();
+                      if (details.direction == DismissDirection.startToEnd) {
+                        await Navigator.pushNamed(
+                            context, '/addmedicine', arguments: {
+                          'info': allMedicines[index],
+                        });
+                      }
+                      else {
+                        await Navigator.pushNamed(
+                            context, '/medicineinfo', arguments: {
+                          'info': allMedicines[index],
+                        });
+                      }
+                      await getAllMedicines();
                     }
                   },
                 );
@@ -138,10 +154,10 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
 
       ),
       floatingActionButton: FloatingActionButton.extended(
-        label: Text(AppLocalizations.of(context)!.addNewCategory),
+        label: Text(AppLocalizations.of(context)!.newMedicine),
         onPressed: () async {
-          await Navigator.pushNamed(context, '/addmedicinecategory');
-          getAllCategories();
+          await Navigator.pushNamed(context, '/addmedicine');
+          getAllMedicines();
         },
       ),
     );

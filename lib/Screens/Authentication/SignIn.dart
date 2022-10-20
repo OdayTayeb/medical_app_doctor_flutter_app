@@ -150,7 +150,7 @@ class _SignInState extends State<SignIn> {
               Map JsonResponse = jsonDecode(response.body);
               if (response.statusCode == 200) {
                 await storage.write(key: 'token', value: JsonResponse['token']);
-                Navigator.pushNamed(context, '/medicinecategories');
+                Navigator.pushNamed(context, '/medicineoptions');
               }
               else {
                 Map<String, dynamic> errors = JsonResponse['errors'];

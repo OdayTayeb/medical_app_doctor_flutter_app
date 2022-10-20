@@ -68,5 +68,18 @@
     "medicineCategories": "أصناف الدواء",
     "addNewCategory": "إضافة صنف جديد",
     "enterCategoryName": "إضافة صنف جديد",
-    "categoryInformation": "معلومات الصنف"
+    "categoryInformation": "معلومات الصنف",
+    "medicines" : "الأدوية",
+    "newMedicine": "دواء جديد",
+    "medicineInformation": "معلومات الدواء",
+    "commercialName" : "الاسم التجاري",
+    "category" : "الصنف",
+    "note": "ملاحظة",
+    "medicineName": "اسم الدواء",
+    "enter": "أدخل",
+    "choose": "اختر",
+    "medicineOptions": "خيارات الدواء",
+    "newMedicineOption": "إضافة خيار جديد",
+    "medicineOptionInformation": "معلومات خيار الدواء",
+    "optionName": "اسم الخيار"
 }

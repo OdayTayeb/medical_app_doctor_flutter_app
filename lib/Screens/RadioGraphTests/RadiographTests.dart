@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:medical_app/MyColors.dart';
 import 'package:medical_app/classes/RadioGraphTestInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
 import '../../SecureStorage.dart';
@@ -82,7 +83,7 @@ class _RadioGraphTestsState extends State<RadioGraphTests> {
                 return Dismissible(
                     child: MyContainer(
                         Text(allRadioGraphTests[index].name,style: TextStyle(fontSize: 20,color: Colors.black,fontWeight: FontWeight.bold)),
-                        SizedBox(),
+                        Text(allRadioGraphTests[index].description,style: TextStyle(fontSize: 15,color: MyGreyColorDarker,fontWeight: FontWeight.bold),overflow: TextOverflow.ellipsis,),
                     ),
                     key: ValueKey(index),
                     background: Container(
