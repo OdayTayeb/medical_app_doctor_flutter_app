@@ -96,3 +96,28 @@ class MyContainer extends StatelessWidget {
     );
   }
 }
+
+class MyDivider extends StatelessWidget {
+
+  String text = "";
+  Color color;
+
+  MyDivider(this.text, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+        padding: const EdgeInsets.only(top: 10,bottom: 10),
+        child: Row(
+          children: [
+            Expanded(child: Divider(color: color,endIndent: 15,indent: 10)),
+            Text(
+              text,
+              style: TextStyle(fontSize: 17,color: color,fontWeight: FontWeight.w800),overflow: TextOverflow.ellipsis,
+            ),
+            Expanded(child: Divider(color: color,endIndent: 10,indent: 15,)),
+          ],
+        )
+    );
+  }
+}

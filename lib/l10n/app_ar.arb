@@ -81,5 +81,27 @@
     "medicineOptions": "خيارات الدواء",
     "newMedicineOption": "إضافة خيار جديد",
     "medicineOptionInformation": "معلومات خيار الدواء",
-    "optionName": "اسم الخيار"
+    "optionName": "اسم الخيار",
+    "allConsultations": "جميع الاستشارات",
+    "consultation": "الاستشارة",
+    "consultationStatus":"حالة الاستشارة",
+    "patientName": "اسم المريض: ",
+    "patientPhone": "رقم المريض: ",
+    "patientAddress": "عنوان المريض: ",
+    "userEmail": "ايميل المستخدم: ",
+    "patientComplaint": "شكوى المريض",
+    "consultationDate": "تاريخ الاستشارة: ",
+    "age": "العمر: ",
+    "pregnancyAndBreastFeedingInformation": "معلومات الحمل والإرضاع",
+    "uploadedDocuments": "الملفات المرفقة",
+    "images": "الصور : ",
+    "mainConsultation": "الاستشارة الرئيسية",
+    "request" : "إرسال طلب",
+    "diagnosis": "إرسال التشخيص النهائي",
+    "requestInformation": "معلومات الطلب",
+    "requestType": "نوع الطلب",
+    "requestContent": "محتوى الطلب",
+    "chooseRequiredBloodTests": "اختر تحاليل الدم المطلوبة",
+    "chooseRequiredRadioGraphTests": "اختر الصور الشعاعية المطلوبة"
+
 }

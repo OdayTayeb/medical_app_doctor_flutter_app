@@ -50,12 +50,12 @@ class _MedicinesState extends State<Medicines> {
     if (response.statusCode == 200){
       List<dynamic> data = JsonResponse['data'];
       for (int i=0;i<data.length;i++){
-        Map <String,dynamic> oneTest = data[i];
-        String id = oneTest['id'].toString();
-        String genericname = oneTest['genericName'].toString();
-        String tradename = oneTest['tradeName'].toString();
-        String note = oneTest['note'].toString();
-        Map <String,dynamic> category = oneTest['category'];
+        Map <String,dynamic> x = data[i];
+        String id = x['id'].toString();
+        String genericname = x['genericName'].toString();
+        String tradename = x['tradeName'].toString();
+        String note = x['note'].toString();
+        Map <String,dynamic> category = x['category'];
         String categoryId = category['id'].toString();
         String categoryName = category['name'].toString();
         allMedicines.add(new MedicineInfo(id, genericname,tradename,categoryName,categoryId,note));

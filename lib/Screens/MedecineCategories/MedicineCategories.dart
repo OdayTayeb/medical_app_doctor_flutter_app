@@ -48,9 +48,9 @@ class _MedicineCategoriesState extends State<MedicineCategories> {
     if (response.statusCode == 200){
       List<dynamic> data = JsonResponse['data'];
       for (int i=0;i<data.length;i++){
-        Map <String,dynamic> oneTest = data[i];
-        String id = oneTest['id'].toString();
-        String name = oneTest['name'].toString();
+        Map <String,dynamic> x = data[i];
+        String id = x['id'].toString();
+        String name = x['name'].toString();
         allCategories.add(new MedicineCategoryInfo(id, name));
       }
     }

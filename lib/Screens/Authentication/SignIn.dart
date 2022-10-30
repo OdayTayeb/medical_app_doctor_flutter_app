@@ -150,7 +150,7 @@ class _SignInState extends State<SignIn> {
               Map JsonResponse = jsonDecode(response.body);
               if (response.statusCode == 200) {
                 await storage.write(key: 'token', value: JsonResponse['token']);
-                Navigator.pushNamed(context, '/medicineoptions');
+                Navigator.pushNamed(context, '/consultations');
               }
               else {
                 Map<String, dynamic> errors = JsonResponse['errors'];
@@ -160,6 +160,7 @@ class _SignInState extends State<SignIn> {
               }
             }
             catch(e){
+              print(e);
               setState(() {
                 message = "Error connecting to server";
               });
