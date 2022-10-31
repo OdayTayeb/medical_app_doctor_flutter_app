@@ -149,8 +149,13 @@ class _SignInState extends State<SignIn> {
               );
               Map JsonResponse = jsonDecode(response.body);
               if (response.statusCode == 200) {
+                String role = JsonResponse['user']['role'];
+                String name = JsonResponse['user']['name'];
                 await storage.write(key: 'token', value: JsonResponse['token']);
-                Navigator.pushNamed(context, '/consultations');
+                Navigator.pushNamed(context, '/home',arguments: {
+                  'name' : name,
+                  'role' : role
+                });
               }
               else {
                 Map<String, dynamic> errors = JsonResponse['errors'];

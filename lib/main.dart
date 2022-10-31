@@ -20,6 +20,7 @@ import 'package:medical_app/Screens/Request/addRequest.dart';
 import 'package:medical_app/Screens/bloodTests/BloodTestInformation.dart';
 import 'package:medical_app/Screens/bloodTests/BloodTests.dart';
 import 'package:medical_app/Screens/bloodTests/addBloodTest.dart';
+import 'package:medical_app/Screens/home/HomePage.dart';
 import 'package:medical_app/Screens/tools/ImageShow.dart';
 import 'package:medical_app/Screens/tools/PdfView.dart';
 import 'package:medical_app/classes/MedicineInfo.dart';
@@ -51,6 +52,7 @@ class MyApp extends StatelessWidget {
       locale: Locale('ar',''),
       // routing
       routes: {
+        '/home': (context) => HomePage(),
         '/signup': (context) => SignUp(),
         '/signin': (context) => SignIn(),
         '/bloodtests': (context) => BloodTests(),

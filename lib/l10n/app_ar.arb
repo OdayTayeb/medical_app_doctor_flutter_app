@@ -102,6 +102,7 @@
     "requestType": "نوع الطلب",
     "requestContent": "محتوى الطلب",
     "chooseRequiredBloodTests": "اختر تحاليل الدم المطلوبة",
-    "chooseRequiredRadioGraphTests": "اختر الصور الشعاعية المطلوبة"
+    "chooseRequiredRadioGraphTests": "اختر الصور الشعاعية المطلوبة",
+    "consultations": "الاستشارات"
 
 }

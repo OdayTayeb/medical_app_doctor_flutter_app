@@ -102,5 +102,6 @@
     "requestType": "Request Type",
     "requestContent": "Request Content",
     "chooseRequiredBloodTests": "Choose Required Blood Tests",
-    "chooseRequiredRadioGraphTests": "Choose Required RadioGraph Tests"
+    "chooseRequiredRadioGraphTests": "Choose Required RadioGraph Tests",
+    "consultations": "Consultations"
 }
