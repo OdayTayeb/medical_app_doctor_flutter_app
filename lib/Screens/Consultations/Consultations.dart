@@ -38,6 +38,7 @@ class _ConsultationsState extends State<Consultations> {
   Future<void> getAllConsultations() async {
     allConsultations.clear();
     String? token = await storage.read(key: 'token');
+    print(token);
     http.Response response = await http.get(
       Uri.parse( URL+ '/api/consultation'),
       headers: <String, String>{

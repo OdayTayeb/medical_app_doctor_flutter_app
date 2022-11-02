@@ -364,7 +364,9 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   }
 
   Widget Request(){
-    return Container();
+    return Bubble(
+
+    );
   }
 
   Widget ActionButtons(){
@@ -393,10 +395,10 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
             child: Padding(
               padding: const EdgeInsets.all(8),
               child: ElevatedButton(
-                onPressed: (){
-                  Navigator.pushNamed(context, '/addrequest', arguments: {
+                onPressed: () async{
+                  Map res = await Navigator.pushNamed(context, '/addrequest', arguments: {
                     'id' : id,
-                  });
+                  }) as Map;
                 },
                 child: Text(AppLocalizations.of(context)!.request,style: TextStyle(fontSize: 18),textAlign: TextAlign.center),
                 style: ButtonStyle(

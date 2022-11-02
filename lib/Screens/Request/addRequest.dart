@@ -284,6 +284,22 @@ class _addRequestState extends State<addRequest> {
     );
   }
 
+  List <String> getSelectedBloodTestsNames(){
+    List <String> names = List.empty(growable: true);
+    for (int i=0;i<allBloodTests.length;i++)
+      if (selectedBloodTests.contains(allBloodTests[i].id))
+        names.add(allBloodTests[i].name);
+    return names;
+  }
+
+  List <String> getSelectedRadioGraphNames(){
+    List <String> names = List.empty(growable: true);
+    for (int i=0;i<allRadioGraphTests.length;i++)
+      if (selectedRadioGraphs.contains(allRadioGraphTests[i].id))
+        names.add(allRadioGraphTests[i].name);
+    return names;
+  }
+
   Widget DoneButton(){
     return Padding(
       padding: EdgeInsets.all(10),
@@ -299,7 +315,8 @@ class _addRequestState extends State<addRequest> {
           };
           if (type == 'BloodTest')
             Body['BloodTestIdArray'] = selectedBloodTests;
-          else Body['RadiographIdArray'] = selectedRadioGraphs;
+          else if (type == 'Radiograph')
+            Body['RadiographIdArray'] = selectedRadioGraphs;
 
           String? token = await storage.read(key: 'token');
           http.Response response = await http.post(
@@ -314,11 +331,31 @@ class _addRequestState extends State<addRequest> {
             },
             body: jsonEncode(Body),
           );
-          print(jsonEncode(Body));
           Map JsonResponse = jsonDecode(response.body);
-          print(response.statusCode);
-          print(response.body);
-
+          if (response.statusCode == 201){
+            if (type == "BloodTest"){
+              List<String> tests= getSelectedBloodTestsNames();
+              Map x = {
+                'content' : requestInput.text,
+                'tests' : tests
+              };
+              Navigator.pop(context, x);
+            }
+            else if (type == 'Radiograph'){
+              List<String> tests= getSelectedRadioGraphNames();
+              Map x = {
+                'content' : requestInput.text,
+                'tests' : tests
+              };
+              Navigator.pop(context,x);
+            }
+            else
+              Navigator.pop(context,requestInput.text);
+          }
+          else{
+            print(response.statusCode);
+            print(JsonResponse);
+          }
           setState(() {
             doneButtonClicked = false;
           });

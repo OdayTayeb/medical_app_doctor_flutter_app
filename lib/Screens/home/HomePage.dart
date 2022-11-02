@@ -105,7 +105,7 @@ class _HomePageState extends State<HomePage> {
               ),
               FittedBox(
                 child: Padding(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.fromLTRB(10,5,10,5),
                   child: Text(
                     AppLocalizations.of(context)!.bloodTests,
                     style: TextStyle(
@@ -150,7 +150,7 @@ class _HomePageState extends State<HomePage> {
               ),
               FittedBox(
                 child: Padding(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.fromLTRB(10,5,10,5),
                   child: Text(
                     AppLocalizations.of(context)!.consultations,
                     style: TextStyle(
@@ -196,7 +196,7 @@ class _HomePageState extends State<HomePage> {
               ),
               FittedBox(
                 child: Padding(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.fromLTRB(10,5,10,5),
                   child: Text(
                     AppLocalizations.of(context)!.userAccountManager,
                     style: TextStyle(
@@ -242,7 +242,7 @@ class _HomePageState extends State<HomePage> {
               ),
               FittedBox(
                 child: Padding(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.fromLTRB(10,5,10,5),
                   child: Text(
                     AppLocalizations.of(context)!.medicines,
                     style: TextStyle(
@@ -288,7 +288,7 @@ class _HomePageState extends State<HomePage> {
               ),
               FittedBox(
                 child: Padding(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.fromLTRB(10,5,10,5),
                   child: Text(
                     AppLocalizations.of(context)!.medicineCategories,
                     style: TextStyle(
@@ -334,7 +334,7 @@ class _HomePageState extends State<HomePage> {
             ),
             FittedBox(
               child: Padding(
-                padding: EdgeInsets.all(10),
+                padding: EdgeInsets.fromLTRB(10,5,10,5),
                 child: Text(
                   AppLocalizations.of(context)!.medicineOptions,
                   style: TextStyle(
@@ -380,7 +380,7 @@ class _HomePageState extends State<HomePage> {
             ),
             FittedBox(
               child: Padding(
-                padding: EdgeInsets.all(10),
+                padding: EdgeInsets.fromLTRB(10,5,10,5),
                 child: Text(
                   AppLocalizations.of(context)!.radioGraphTests,
                   style: TextStyle(
