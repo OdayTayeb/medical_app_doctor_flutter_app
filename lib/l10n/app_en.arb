@@ -103,5 +103,9 @@
     "requestContent": "Request Content",
     "chooseRequiredBloodTests": "Choose Required Blood Tests",
     "chooseRequiredRadioGraphTests": "Choose Required RadioGraph Tests",
-    "consultations": "Consultations"
+    "consultations": "Consultations",
+    "message": "message: ",
+    "requestedBloodTests": "Requested Blood Tests: ",
+    "requestedRadioGraphTests": "Requested Radio Graph Tests: "
+
 }

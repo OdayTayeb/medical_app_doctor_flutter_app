@@ -11,9 +11,6 @@ import '../../SecureStorage.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'dart:io';
-import 'package:path/path.dart' as p;
 
 
 class ConsultationInformation extends StatefulWidget {
@@ -48,8 +45,10 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   List<Uint8List> consultationPdfs = List.empty(growable: true);
   String audioId ="";
 
-  bool dataIsFetched = false;
+  List <Widget> requestAndAttachment = List.empty(growable: true);
   bool mediaDataIsFetched = false;
+  bool dataIsFetched = false;
+
 
   @override
   void initState() {
@@ -63,10 +62,10 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       setState(() {
         dataIsFetched = true;
       });
-      await FetchConsultationMedia();
-      setState(() {
-        mediaDataIsFetched = true;
-      });
+      FetchConsultationMedia().then(
+        (value) {if (mounted) setState(() {mediaDataIsFetched = true;});}
+      );
+      FetchRequests();
     });
   }
 
@@ -195,12 +194,51 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     return response.bodyBytes;
   }
 
+  Future <void> FetchRequests() async{
+    String? token = await storage.read(key: 'token');
+    http.Response response = await http.get(
+      Uri.parse(URL+ '/api/' + id + '/req'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    Map JsonResponse = jsonDecode(response.body);
+    print(response.body);
+    print(response.statusCode);
+    /*List <dynamic> data = JsonResponse['data'];
+    for (int i=0;i<data.length;i++){
+      Map item = data[i];
+      String comment = item['comment'];
+      List <String> bloodTests = List.empty(growable: true);
+      List <dynamic> bt = item['bloodTests'];
+      for (int j=0;j<bt.length;j++)
+        bloodTests.add(bt[j]['name'].toString());
+      List <String> radioTests = List.empty(growable: true);
+      List <dynamic> rt = item['radiographs'];
+      for (int j=0;j<rt.length;j++)
+        radioTests.add(rt[j]['name'].toString());
+      if (bloodTests.length>0)
+        requestAndAttachment.add(Request('bloodTest',comment,requested: bloodTests));
+      else if (radioTests.length>0)
+        requestAndAttachment.add(Request('radioGraph',comment,requested: radioTests));
+      else requestAndAttachment.add(Request('normal',comment));
+    }*/
+    setState(() {
+
+    });
+  }
+
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: MyCyanColor,
+      backgroundColor: Color(0xffF5F5F5),
       appBar: AppBar(
         iconTheme: IconThemeData(
           color: Colors.white,
@@ -214,9 +252,12 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       ),
       body: dataIsFetched
           ? SingleChildScrollView(
-              child: Column(children: [
-                MainConsultation(),
-              ]),
+              child: Column(
+                children: [
+                  MainConsultation(),
+                  RequestAndAttachment(),
+                ]
+              ),
             )
           : Center(
               child: CircularProgressIndicator(),
@@ -239,15 +280,13 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Divider(thickness: 2,color: Colors.black,),
           Container(
               width: double.infinity,
               height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(50),
-                color: Colors.blue.shade900,
-              ),
-              child: Center(child: Text(AppLocalizations.of(context)!.mainConsultation,style: TextStyle(color: Colors.white,fontWeight: FontWeight.w900,fontSize: 25),))
+              child: Center(child: Text(AppLocalizations.of(context)!.mainConsultation,style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 25),))
           ),
+          Divider(thickness: 2,color: Colors.black,),
           MyDivider(
               AppLocalizations.of(context)!.pateintInformation, Colors.black),
           Text(AppLocalizations.of(context)!.userEmail + email + "\n" +
@@ -363,9 +402,33 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     );
   }
 
-  Widget Request(){
-    return Bubble(
+  Widget RequestAndAttachment(){
+    return Column(
+      children: requestAndAttachment,
+    );
+  }
 
+  Widget Request(String type,String message,{List<String> requested = const []}){
+    List <Widget> content = List.empty(growable: true);
+    content.add(Text(AppLocalizations.of(context)!.requestInformation,style: TextStyle(fontWeight: FontWeight.bold),));
+    content.add(Text(AppLocalizations.of(context)!.message + message));
+    if (type == 'bloodTest')
+      content.add(Text(AppLocalizations.of(context)!.requestedBloodTests));
+    if (type == 'radioGraph')
+      content.add(Text(AppLocalizations.of(context)!.requestedRadioGraphTests));
+    for (int i=0;i<requested.length;i++)
+      content.add(Text('- '+requested[i]));
+    return Bubble(
+      alignment: Alignment.topLeft,
+      nip: BubbleNip.leftTop,
+      nipHeight: 10,
+      nipWidth: 15,
+      margin: BubbleEdges.fromLTRB(10, 10, 25, 10),
+      color: MyCyanColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children : content,
+      ),
     );
   }
 

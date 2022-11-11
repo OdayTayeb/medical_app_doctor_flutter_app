@@ -103,6 +103,9 @@
     "requestContent": "محتوى الطلب",
     "chooseRequiredBloodTests": "اختر تحاليل الدم المطلوبة",
     "chooseRequiredRadioGraphTests": "اختر الصور الشعاعية المطلوبة",
-    "consultations": "الاستشارات"
+    "consultations": "الاستشارات",
+    "message": "الرسالة: ",
+    "requestedBloodTests": "مطلوب تحاليل الدم التالية: ",
+    "requestedRadioGraphTests": "مطلوب الصور الشعاعية التالية: "
 
 }
