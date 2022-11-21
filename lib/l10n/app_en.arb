@@ -106,6 +106,7 @@
     "consultations": "Consultations",
     "message": "message: ",
     "requestedBloodTests": "Requested Blood Tests: ",
-    "requestedRadioGraphTests": "Requested Radio Graph Tests: "
+    "requestedRadioGraphTests": "Requested Radio Graph Tests: ",
+    "thisRequest": "This Request"
 
 }

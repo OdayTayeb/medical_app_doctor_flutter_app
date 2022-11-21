@@ -6,6 +6,8 @@ import 'package:medical_app/BackEndURL.dart';
 import 'package:medical_app/MyColors.dart';
 import 'package:bubble/bubble.dart';
 import 'package:http/http.dart' as http;
+import 'package:medical_app/classes/RequestAttachmentInfo.dart';
+import 'package:medical_app/classes/RequestInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
 import '../../SecureStorage.dart';
 import 'dart:convert';
@@ -45,6 +47,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   List<Uint8List> consultationPdfs = List.empty(growable: true);
   String audioId ="";
 
+  List <Object> requestAndAttachmentData = List.empty(growable: true);
   List <Widget> requestAndAttachment = List.empty(growable: true);
   bool mediaDataIsFetched = false;
   bool dataIsFetched = false;
@@ -207,32 +210,63 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
         'Authorization': 'Bearer $token',
       },
     );
-    Map JsonResponse = jsonDecode(response.body);
-    print(response.body);
-    print(response.statusCode);
-    /*List <dynamic> data = JsonResponse['data'];
-    for (int i=0;i<data.length;i++){
-      Map item = data[i];
-      String comment = item['comment'];
-      List <String> bloodTests = List.empty(growable: true);
-      List <dynamic> bt = item['bloodTests'];
-      for (int j=0;j<bt.length;j++)
-        bloodTests.add(bt[j]['name'].toString());
-      List <String> radioTests = List.empty(growable: true);
-      List <dynamic> rt = item['radiographs'];
-      for (int j=0;j<rt.length;j++)
-        radioTests.add(rt[j]['name'].toString());
-      if (bloodTests.length>0)
-        requestAndAttachment.add(Request('bloodTest',comment,requested: bloodTests));
-      else if (radioTests.length>0)
-        requestAndAttachment.add(Request('radioGraph',comment,requested: radioTests));
-      else requestAndAttachment.add(Request('normal',comment));
-    }*/
+    if (response.statusCode == 200) {
+      Map JsonResponse = jsonDecode(response.body);
+      List <dynamic> data = JsonResponse['data'];
+      int index = 0;
+      for (int i = 0; i < data.length; i++) {
+        Map item = data[i];
+        String id = item['id'].toString();
+        String comment = item['comment'];
+        List <String> bloodTests = List.empty(growable: true);
+        List <dynamic> bt = item['bloodTests'];
+        for (int j = 0; j < bt.length; j++)
+          bloodTests.add(bt[j]['name'].toString());
+        List <String> radioTests = List.empty(growable: true);
+        List <dynamic> rt = item['radiographs'];
+        for (int j = 0; j < rt.length; j++)
+          radioTests.add(rt[j]['name'].toString());
+        List <dynamic> att = item['attachments'];
+        List <Uint8List> attachments = List.empty(growable: true);
+        for (int j = 0; j < att.length; j++) {
+          String x = att[j]['id'].toString();
+          attachments.add(await FetchAttachment(x));
+        }
+        bool isFulfilled = false;
+        if (attachments.length > 0)
+          isFulfilled = true;
+        requestAndAttachmentData.add(RequestInfo(id,index,comment,bloodTests,radioTests,isFulfilled));
+        requestAndAttachment.add(Request(requestAndAttachmentData.last as RequestInfo));
+        index++;
+
+        if (attachments.length>0) {
+          requestAndAttachmentData.add(RequestAttachmentInfo(attachments, index));
+          requestAndAttachment.add(Attachment(requestAndAttachmentData.last as RequestAttachmentInfo));
+          index++;
+        }
+
+      }
+    }
     setState(() {
 
     });
   }
 
+  Future< Uint8List > FetchAttachment(String attachmentID) async{
+    String? token = await storage.read(key: 'token');
+    http.Response response = await http.get(
+      Uri.parse(URL+ '/api/attachment/' + attachmentID),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    return response.bodyBytes;
+  }
 
 
   @override
@@ -408,28 +442,161 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     );
   }
 
-  Widget Request(String type,String message,{List<String> requested = const []}){
+  Widget Request(RequestInfo R){
     List <Widget> content = List.empty(growable: true);
     content.add(Text(AppLocalizations.of(context)!.requestInformation,style: TextStyle(fontWeight: FontWeight.bold),));
-    content.add(Text(AppLocalizations.of(context)!.message + message));
-    if (type == 'bloodTest')
+    content.add(Text(AppLocalizations.of(context)!.message + R.comment));
+    if (R.bloodTests.length>0) {
       content.add(Text(AppLocalizations.of(context)!.requestedBloodTests));
-    if (type == 'radioGraph')
+      for (int i=0;i<R.bloodTests.length;i++)
+        content.add(Text('- '+R.bloodTests[i]));
+    }
+    if (R.radioTests.length>0) {
       content.add(Text(AppLocalizations.of(context)!.requestedRadioGraphTests));
-    for (int i=0;i<requested.length;i++)
-      content.add(Text('- '+requested[i]));
-    return Bubble(
-      alignment: Alignment.topLeft,
-      nip: BubbleNip.leftTop,
-      nipHeight: 10,
-      nipWidth: 15,
-      margin: BubbleEdges.fromLTRB(10, 10, 25, 10),
-      color: MyCyanColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children : content,
-      ),
+      for (int i=0;i<R.radioTests.length;i++)
+        content.add(Text('- '+R.radioTests[i]));
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (!R.isFulfilled)
+          Align(
+          alignment: Alignment.topLeft,
+          child: CircleAvatar(
+                backgroundColor: MyCyanColor,
+                child: IconButton(
+                  onPressed: ()  {
+                    editRequest(R);
+                  },
+                  icon: Icon(Icons.edit),
+                  color: Colors.black,
+                ),
+          ),
+        ),
+        if (!R.isFulfilled)
+          SizedBox(width: 10,),
+        if (!R.isFulfilled)
+          Align(
+          alignment: Alignment.topLeft,
+          child: CircleAvatar(
+              backgroundColor: MyCyanColor,
+              child: IconButton(
+                onPressed: () {
+                  showAlertDialog(context,R);
+                },
+                icon: Icon(Icons.delete),
+                color: Colors.black,
+              ),
+            ),
+        ),
+        Container(
+          width: MediaQuery.of(context).size.width/1.5,
+          child: Bubble(
+            alignment: Alignment.topLeft,
+            nip: BubbleNip.leftTop,
+            nipHeight: 10,
+            nipWidth: 15,
+            margin: BubbleEdges.fromLTRB(10, 10, 0, 10),
+            color: MyCyanColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children : content,
+            ),
+          ),
+        ),
+
+      ],
     );
+  }
+
+  void editRequest(RequestInfo R) async {
+    Map Args = {
+      'id': id,
+      'index' : requestAndAttachment.length,
+      'Request': R,
+    };
+    try {
+      RequestInfo res = await Navigator.pushNamed(context, '/addrequest', arguments: Args) as RequestInfo;
+      requestAndAttachmentData.removeAt(res.index);
+      requestAndAttachmentData.insert(res.index,res);
+      requestAndAttachment.removeAt(res.index);
+      requestAndAttachment.insert(res.index,Request(res));
+      setState(() {
+
+      });
+    }
+    catch(e){
+      print(e);
+    }
+  }
+
+  showAlertDialog(BuildContext context,RequestInfo R) {
+    Widget cancelButton = TextButton(
+      child: Text(AppLocalizations.of(context)!.no),
+      onPressed:  () {
+        Navigator.of(context).pop();
+      },
+    );
+    Widget continueButton = TextButton(
+      child: Text(AppLocalizations.of(context)!.yes),
+      onPressed:  () async {
+        await deleteRequest(R);
+        Navigator.pop(context);
+      },
+    );
+    AlertDialog alert = AlertDialog(
+      title: Text(AppLocalizations.of(context)!.delete),
+      content: Text(AppLocalizations.of(context)!.areYouSureYouWantTo+AppLocalizations.of(context)!.delete+" "+AppLocalizations.of(context)!.thisRequest+"?"),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  Future <void> deleteRequest(RequestInfo R) async{
+    String? token = await storage.read(key: 'token');
+    http.Response response = await http.delete(
+      Uri.parse(URL+ '/api/' + id + '/req/' + R.id),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 204){
+      int index = R.index;
+      for (int i=index+1;i<requestAndAttachmentData.length;i++){
+        if (requestAndAttachmentData[i] is RequestInfo) {
+          RequestInfo r = requestAndAttachmentData[i] as RequestInfo;
+          r.decrementIndex();
+        }
+        else if (requestAndAttachmentData[i] is RequestAttachmentInfo) {
+          RequestAttachmentInfo r = requestAndAttachmentData[i] as RequestAttachmentInfo;
+          r.decrementIndex();
+        }
+      }
+      requestAndAttachmentData.removeAt(index);
+      requestAndAttachment.removeAt(index);
+      setState(() {
+
+      });
+    }
+    else{
+      print(response.statusCode);
+      print(response.body);
+    }
   }
 
   Widget ActionButtons(){
@@ -459,9 +626,22 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
               padding: const EdgeInsets.all(8),
               child: ElevatedButton(
                 onPressed: () async{
-                  Map res = await Navigator.pushNamed(context, '/addrequest', arguments: {
-                    'id' : id,
-                  }) as Map;
+                  try {
+                    RequestInfo res = await Navigator.pushNamed(
+                        context, '/addrequest', arguments: {
+                      'id': id,
+                      'index' : requestAndAttachment.length,
+                    }) as RequestInfo;
+
+                    requestAndAttachmentData.add(res);
+                    requestAndAttachment.add(Request(res));
+
+                    setState(() {
+
+                    });
+                  }catch(e){
+                    print(e);
+                  }
                 },
                 child: Text(AppLocalizations.of(context)!.request,style: TextStyle(fontSize: 18),textAlign: TextAlign.center),
                 style: ButtonStyle(
@@ -483,6 +663,57 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   }
 
 
+  Widget Attachment(RequestAttachmentInfo R){
+    return Bubble(
+      alignment: Alignment.topRight,
+      nip: BubbleNip.rightTop,
+      nipHeight: 10,
+      nipWidth: 15,
+      margin: BubbleEdges.fromLTRB(25, 10, 10, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(AppLocalizations.of(context)!.uploadedDocuments,style: TextStyle(fontWeight: FontWeight.bold,)),
+          Container(
+            height: 100,
+            width: MediaQuery.of(context).size.width/1.8,
+            child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: R.images.length,
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(
+                          context, '/imageshow', arguments: {
+                        'image': Image.memory(R.images[index])
+                      });
+                    },
+                    child: Container(
+                      margin: EdgeInsets.all(5),
+                      padding: EdgeInsets.all(1),
+                      height: 90,
+                      width: 90,
+                      decoration: BoxDecoration(
+                        color: MyGreyColorDarker,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child:
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.memory(
+                          R.images[index],
+                          width: 90,
+                          height: 90,
+                          fit: BoxFit.cover,),
+                      ),
+                    ),
+                  );
+                }),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 

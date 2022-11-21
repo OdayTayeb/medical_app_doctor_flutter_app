@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:medical_app/MyColors.dart';
 import 'package:medical_app/classes/BloodTestInfo.dart';
 import 'package:medical_app/classes/RadioGraphTestInfo.dart';
+import 'package:medical_app/classes/RequestInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
 import '../../SecureStorage.dart';
 import 'package:http/http.dart' as http;
@@ -19,6 +20,7 @@ class addRequest extends StatefulWidget {
 
 class _addRequestState extends State<addRequest> {
 
+  int index = 0;
   String consultationId= "";
   String type = "Normal";
   TextEditingController requestInput = TextEditingController(text: "");
@@ -29,6 +31,8 @@ class _addRequestState extends State<addRequest> {
   bool RadioGraphFetched = false;
   List <String> selectedBloodTests = List.empty(growable: true);
   List <String> selectedRadioGraphs = List.empty(growable: true);
+  bool valuesInitialized = false;
+  late RequestInfo requestInfo;
 
   @override
   void initState() {
@@ -62,6 +66,12 @@ class _addRequestState extends State<addRequest> {
         String comment = oneTest['comment'].toString();
         allRadioGraphTests.add(new RadioGraphTestInfo(id, name, comment));
       }
+      for (int i=0;i<selectedRadioGraphs.length;i++)
+        for (int j=0;j<allRadioGraphTests.length;j++)
+          if (selectedRadioGraphs[i] == allRadioGraphTests[j].name){
+            selectedRadioGraphs[i] = allRadioGraphTests[j].id;
+            break;
+          }
     }
     setState(() {
       RadioGraphFetched = true;
@@ -93,6 +103,13 @@ class _addRequestState extends State<addRequest> {
         String comment = oneTest['comment'].toString();
         allBloodTests.add(new BloodTestInfo(id, name, comment));
       }
+      for (int i=0;i<selectedBloodTests.length;i++)
+        for (int j=0;j<allBloodTests.length;j++)
+          if (selectedBloodTests[i] == allBloodTests[j].name){
+            selectedBloodTests[i] = allBloodTests[j].id;
+            break;
+          }
+
     }
     setState(() {
       bloodTestsFetched = true;
@@ -103,6 +120,20 @@ class _addRequestState extends State<addRequest> {
   Widget build(BuildContext context) {
     final arguments = (ModalRoute.of(context)?.settings.arguments ?? <String, dynamic>{}) as Map;
     consultationId = arguments['id'];
+    index = arguments['index'];
+    if (arguments['Request']!=null && !valuesInitialized){
+      requestInfo = arguments['Request'];
+      if (requestInfo.bloodTests.length>0) {
+        type = "BloodTest";
+        selectedBloodTests.addAll(requestInfo.bloodTests);
+      }
+      else if (requestInfo.radioTests.length>0) {
+        type = "Radiograph";
+        selectedRadioGraphs.addAll(requestInfo.radioTests);
+      }
+      requestInput = TextEditingController(text: requestInfo.comment);
+      valuesInitialized = true;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -111,7 +142,8 @@ class _addRequestState extends State<addRequest> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            RequestType(),
+            if (!valuesInitialized)
+              RequestType(),
             RequestContent(),
             if (type == "BloodTest" && !bloodTestsFetched)
               CircularProgressIndicator(),
@@ -284,21 +316,6 @@ class _addRequestState extends State<addRequest> {
     );
   }
 
-  List <String> getSelectedBloodTestsNames(){
-    List <String> names = List.empty(growable: true);
-    for (int i=0;i<allBloodTests.length;i++)
-      if (selectedBloodTests.contains(allBloodTests[i].id))
-        names.add(allBloodTests[i].name);
-    return names;
-  }
-
-  List <String> getSelectedRadioGraphNames(){
-    List <String> names = List.empty(growable: true);
-    for (int i=0;i<allRadioGraphTests.length;i++)
-      if (selectedRadioGraphs.contains(allRadioGraphTests[i].id))
-        names.add(allRadioGraphTests[i].name);
-    return names;
-  }
 
   Widget DoneButton(){
     return Padding(
@@ -319,38 +336,61 @@ class _addRequestState extends State<addRequest> {
             Body['RadiographIdArray'] = selectedRadioGraphs;
 
           String? token = await storage.read(key: 'token');
-          http.Response response = await http.post(
-            Uri.parse( URL+ '/api/' + consultationId + '/req'),
-            headers: <String, String>{
-              'Content-Type': 'application/json',
-              'Accept': '*/*',
-              'Connection': 'keep-alive',
-              'Accept-Encoding': 'gzip, deflate, br',
-              'Accept': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(Body),
-          );
+
+          http.Response response;
+          if (!valuesInitialized) {
+            response = await http.post(
+              Uri.parse(URL + '/api/' + consultationId + '/req'),
+              headers: <String, String>{
+                'Content-Type': 'application/json',
+                'Accept': '*/*',
+                'Connection': 'keep-alive',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode(Body),
+            );
+          }
+          else{
+             response = await http.put(
+              Uri.parse(URL + '/api/' + consultationId + '/req/'+requestInfo.id),
+              headers: <String, String>{
+                'Content-Type': 'application/json',
+                'Accept': '*/*',
+                'Connection': 'keep-alive',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode(Body),
+            );
+          }
           Map JsonResponse = jsonDecode(response.body);
+
           if (response.statusCode == 201){
-            if (type == "BloodTest"){
-              List<String> tests= getSelectedBloodTestsNames();
-              Map x = {
-                'content' : requestInput.text,
-                'tests' : tests
-              };
-              Navigator.pop(context, x);
+
+            Map item = JsonResponse['data'];
+            String id = item['id'].toString();
+            String comment = item['comment'];
+            List <String> bloodTests = List.empty(growable: true);
+            List <dynamic> bt = item['bloodTests'];
+            for (int j = 0; j < bt.length; j++)
+              bloodTests.add(bt[j]['name'].toString());
+            List <String> radioTests = List.empty(growable: true);
+            List <dynamic> rt = item['radiographs'];
+            for (int j = 0; j < rt.length; j++)
+              radioTests.add(rt[j]['name'].toString());
+            RequestInfo R;
+            if (!valuesInitialized)
+              R = RequestInfo(id, index, comment, bloodTests, radioTests, false);
+            else {
+              requestInfo.comment = comment;
+              requestInfo.bloodTests = bloodTests;
+              requestInfo.radioTests = radioTests;
+              R = requestInfo;
             }
-            else if (type == 'Radiograph'){
-              List<String> tests= getSelectedRadioGraphNames();
-              Map x = {
-                'content' : requestInput.text,
-                'tests' : tests
-              };
-              Navigator.pop(context,x);
-            }
-            else
-              Navigator.pop(context,requestInput.text);
+            Navigator.pop(context,R);
           }
           else{
             print(response.statusCode);

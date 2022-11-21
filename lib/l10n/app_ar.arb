@@ -106,6 +106,6 @@
     "consultations": "الاستشارات",
     "message": "الرسالة: ",
     "requestedBloodTests": "مطلوب تحاليل الدم التالية: ",
-    "requestedRadioGraphTests": "مطلوب الصور الشعاعية التالية: "
-
+    "requestedRadioGraphTests": "مطلوب الصور الشعاعية التالية: ",
+    "thisRequest": "هذا الطلب"
 }
