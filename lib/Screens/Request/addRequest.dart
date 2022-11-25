@@ -325,7 +325,6 @@ class _addRequestState extends State<addRequest> {
           setState(() {
             doneButtonClicked = true;
           });
-
           Map Body = {
             'type' : type,
             'comment': requestInput.text,
@@ -366,10 +365,9 @@ class _addRequestState extends State<addRequest> {
               body: jsonEncode(Body),
             );
           }
-          Map JsonResponse = jsonDecode(response.body);
 
-          if (response.statusCode == 201){
-
+          if (response.statusCode == 201 || response.statusCode == 200){
+            Map JsonResponse = jsonDecode(response.body);
             Map item = JsonResponse['data'];
             String id = item['id'].toString();
             String comment = item['comment'];
@@ -393,8 +391,9 @@ class _addRequestState extends State<addRequest> {
             Navigator.pop(context,R);
           }
           else{
+            print(jsonEncode(Body));
             print(response.statusCode);
-            print(JsonResponse);
+            print(response.body);
           }
           setState(() {
             doneButtonClicked = false;

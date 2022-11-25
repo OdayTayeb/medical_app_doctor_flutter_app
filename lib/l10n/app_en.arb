@@ -97,7 +97,7 @@
     "images": "Images : ",
     "mainConsultation": "Main Consultation",
     "request" : "Send a Request",
-    "diagnosis": "Send Final Diagnosis",
+    "diagnosis": "Final Diagnosis",
     "requestInformation": "Request Information",
     "requestType": "Request Type",
     "requestContent": "Request Content",
@@ -107,6 +107,12 @@
     "message": "message: ",
     "requestedBloodTests": "Requested Blood Tests: ",
     "requestedRadioGraphTests": "Requested Radio Graph Tests: ",
-    "thisRequest": "This Request"
+    "thisRequest": "This Request",
+    "diagnosisInformation": "Diagnosis Information",
+    "chooseAMedicine": "Choose A Medicine",
+    "medicineTakingOptions": "Medicine Taking Options",
+    "medicineTakingDuration": "Medicine taking duration in days",
+    "thisMedicine": "This Medicine",
+    "medicineEditing": "Medicine Editing"
 
 }

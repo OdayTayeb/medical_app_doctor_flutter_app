@@ -5,6 +5,8 @@ import 'package:medical_app/Screens/Authentication/EditUser.dart';
 import 'package:medical_app/Screens/Authentication/userManager.dart';
 import 'package:medical_app/Screens/Consultations/ConsulatationInformation.dart';
 import 'package:medical_app/Screens/Consultations/Consultations.dart';
+import 'package:medical_app/Screens/Diagnosis/CreateDiagnosis.dart';
+import 'Screens/Diagnosis/DiagnosisMedicinesManagement.dart';
 import 'package:medical_app/Screens/MedecineCategories/MedicineCategories.dart';
 import 'package:medical_app/Screens/MedecineCategories/MedicineInformation.dart';
 import 'package:medical_app/Screens/MedecineCategories/addMedicineCategory.dart';
@@ -76,6 +78,8 @@ class MyApp extends StatelessWidget {
         '/imageshow': (context) =>ImageShow(),
         '/pdfview': (context) =>PdfView(),
         '/addrequest': (context) => addRequest(),
+        '/creatediagnosis': (context) =>CreateDiagnosis(),
+        '/diagnosismedicinesmanagement': (context) => DiagnosisMedicinesManagement(),
       },
       initialRoute: '/signin',
       // Theme

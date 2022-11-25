@@ -97,7 +97,7 @@
     "images": "الصور : ",
     "mainConsultation": "الاستشارة الرئيسية",
     "request" : "إرسال طلب",
-    "diagnosis": "إرسال التشخيص النهائي",
+    "diagnosis": "التشخيص النهائي",
     "requestInformation": "معلومات الطلب",
     "requestType": "نوع الطلب",
     "requestContent": "محتوى الطلب",
@@ -107,5 +107,11 @@
     "message": "الرسالة: ",
     "requestedBloodTests": "مطلوب تحاليل الدم التالية: ",
     "requestedRadioGraphTests": "مطلوب الصور الشعاعية التالية: ",
-    "thisRequest": "هذا الطلب"
+    "thisRequest": "هذا الطلب",
+    "diagnosisInformation": "معلومات التشخيص",
+    "chooseAMedicine": "اختر دواء",
+    "medicineTakingOptions": "خيارات أخذ الدواء",
+    "medicineTakingDuration": "مدة أخذ الدواء بالأيام",
+    "thisMedicine": "هذا الدواء",
+    "medicineEditing": "تحرير الأدوية"
 }

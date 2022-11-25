@@ -6,6 +6,8 @@ import 'package:medical_app/BackEndURL.dart';
 import 'package:medical_app/MyColors.dart';
 import 'package:bubble/bubble.dart';
 import 'package:http/http.dart' as http;
+import 'package:medical_app/classes/DiagnosisInfo.dart';
+import 'package:medical_app/classes/DiagnosisMedicineInfo.dart';
 import 'package:medical_app/classes/RequestAttachmentInfo.dart';
 import 'package:medical_app/classes/RequestInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
@@ -50,26 +52,25 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   List <Object> requestAndAttachmentData = List.empty(growable: true);
   List <Widget> requestAndAttachment = List.empty(growable: true);
   bool mediaDataIsFetched = false;
-  bool dataIsFetched = false;
+  bool mainConsultationIsFetched = false;
+  bool diagnosisIsFetched = false;
+  bool diagnosisCreated = false;
+  late DiagnosisInfo diagnosisInfo;
 
 
   @override
   void initState() {
     super.initState();
     Future.delayed(Duration.zero, () {
-      final arguments = (ModalRoute.of(context)?.settings.arguments ??
-          <String, dynamic>{}) as Map;
-      id = arguments['id'];
-    }).then((value) async {
-      await FetchMainConsultation();
-      setState(() {
-        dataIsFetched = true;
+        final arguments = (ModalRoute.of(context)?.settings.arguments ?? <String, dynamic>{}) as Map;
+        id = arguments['id'];
+      }).then((value) async {
+        await Future.wait([
+          FetchMainConsultation().then((value) => FetchConsultationMedia()),
+          FetchRequests(),
+          FetchDiagnosis(),
+        ]);
       });
-      FetchConsultationMedia().then(
-        (value) {if (mounted) setState(() {mediaDataIsFetched = true;});}
-      );
-      FetchRequests();
-    });
   }
 
   Future<void> FetchMainConsultation() async {
@@ -88,6 +89,9 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     Map JsonResponse = jsonDecode(response.body);
     if (response.statusCode == 200) {
       Map<String, dynamic> x = JsonResponse['data'];
+      // print(x.keys.length);
+      // for (int i=0;i<x.keys.length;i++)
+      //   print(x.keys.elementAt(i).toString()+" "+x[x.keys.elementAt(i)].toString());
       List<dynamic> images = x['photos'];
       for (int i = 0; i < images.length; i++) {
         Map<String, dynamic> oneImage = images[i];
@@ -132,11 +136,17 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       Map<String, dynamic> user = x['user'];
       email = user['email'].toString();
     }
+    setState(() {
+      mainConsultationIsFetched = true;
+    });
   }
 
   Future<void> FetchConsultationMedia() async {
-    await FetchConsultationImages();
-    await FetchConsultationPdfs();
+    await Future.wait([
+      FetchConsultationImages(),
+      FetchConsultationPdfs()
+    ]);
+    if (mounted) setState(() {mediaDataIsFetched = true;});
   }
 
   Future<void> FetchConsultationImages() async {
@@ -268,6 +278,50 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     return response.bodyBytes;
   }
 
+  Future< void > FetchDiagnosis() async{
+    String? token = await storage.read(key: 'token');
+    http.Response response = await http.get(
+      Uri.parse(URL+ '/api/prescription/' + id),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200){
+      Map JsonResponse = jsonDecode(response.body);
+      Map data = JsonResponse['data'];
+      String id = data['id'].toString();
+      String diagnosis = data['advice'].toString();
+      List drugs= data['drug'];
+      List<DiagnosisMedicineInfo> x = [];
+      for (int i=0;i<drugs.length;i++){
+        Map item = drugs[i];
+        String id = item['id'].toString();
+        String medicineId = item['drug_id'].toString();
+        String optionId = item['medication_option_id'].toString();
+        String duration = item['duration'].toString();
+        x.add(DiagnosisMedicineInfo(id,medicineId,optionId,duration));
+      }
+      diagnosisInfo = DiagnosisInfo(id,diagnosis,x);
+      setState(() {
+        diagnosisCreated = true;
+      });
+    }
+    else {
+      print(response.statusCode);
+      print(response.body);
+    }
+    setState(() {
+      diagnosisIsFetched = true;
+    });
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -284,19 +338,21 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
           style: TextStyle(color: Colors.white),
         ),
       ),
-      body: dataIsFetched
+      body: mainConsultationIsFetched
           ? SingleChildScrollView(
               child: Column(
                 children: [
                   MainConsultation(),
                   RequestAndAttachment(),
+                  if (diagnosisCreated)
+                    Diagnosis(),
                 ]
               ),
             )
           : Center(
               child: CircularProgressIndicator(),
             ),
-      bottomNavigationBar: ActionButtons(),
+      bottomNavigationBar: diagnosisIsFetched ? ActionButtons() : null,
     );
   }
 
@@ -603,24 +659,40 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     return Container(
       child: Row(
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: ElevatedButton(
-                onPressed: (){},
-                child: Text(AppLocalizations.of(context)!.diagnosis,style: TextStyle(fontSize: 18),textAlign: TextAlign.center,),
-                style: ButtonStyle(
-                  minimumSize: MaterialStateProperty.all(Size(20,80)),
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      )
+          if (!diagnosisCreated)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: ElevatedButton(
+                  onPressed: ()async{
+                    try {
+                      DiagnosisInfo res = await Navigator.pushNamed(
+                          context, '/creatediagnosis', arguments: {
+                        'id': id,
+                      }) as DiagnosisInfo;
+                      if (mounted)
+                        setState(() {
+                          diagnosisCreated = true;
+                          diagnosisInfo = res;
+                        });
+                    }
+                    catch(e){
+                      print(e);
+                    }
+                  },
+                  child: Text(AppLocalizations.of(context)!.diagnosis,style: TextStyle(fontSize: 18),textAlign: TextAlign.center,),
+                  style: ButtonStyle(
+                    minimumSize: MaterialStateProperty.all(Size(20,80)),
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        )
+                    ),
+                    backgroundColor: MaterialStateProperty.all(Colors.blue.shade900),
                   ),
-                  backgroundColor: MaterialStateProperty.all(Colors.blue.shade900),
                 ),
               ),
             ),
-          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8),
@@ -712,6 +784,91 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget Diagnosis(){
+    List <Widget> Medicine = [];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            children: [
+              CircleAvatar(
+                backgroundColor: MyCyanColor,
+                child: IconButton(
+                    onPressed: (){
+                      Navigator.pushNamed(context, '/diagnosismedicinesmanagement',arguments: {
+                        'diagnosis': diagnosisInfo,
+                      });
+
+                    },
+                    icon: Icon(Icons.medical_services,color: Colors.black,)
+                ),
+              ),
+              SizedBox(height: 15,),
+              CircleAvatar(
+                backgroundColor: MyCyanColor,
+                child: IconButton(
+                    onPressed: () async{
+                      try {
+                        DiagnosisInfo res = await Navigator.pushNamed(context, '/creatediagnosis', arguments: {
+                          'id': id,
+                          'diagnosis': diagnosisInfo,
+                        }) as DiagnosisInfo;
+                        if (mounted)
+                          setState(() {
+                            diagnosisInfo = res;
+                          });
+                      }
+                      catch(e){
+                        print(e);
+                      }
+                    },
+                    icon: Icon(Icons.edit,color: Colors.black,)
+                ),
+              ),
+              SizedBox(height: 15,),
+              CircleAvatar(
+                backgroundColor: MyCyanColor,
+                child: IconButton(
+                    onPressed: (){},
+                    icon: Icon(Icons.done,color: Colors.black,)
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          flex: 5,
+          child: Bubble(
+            alignment: Alignment.topLeft,
+            nip: BubbleNip.leftTop,
+            nipHeight: 10,
+            nipWidth: 15,
+            margin: BubbleEdges.fromLTRB(10, 10, 0, 10),
+            color: MyCyanColor,
+            child: Column(
+              children: [
+                Divider(thickness: 2,color: Colors.black,),
+                Container(
+                    width: double.infinity,
+                    height: 80,
+                    child: Center(child: Text(AppLocalizations.of(context)!.diagnosis,style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 25),))
+                ),
+                Divider(thickness: 2,color: Colors.black,),
+                MyDivider(AppLocalizations.of(context)!.diagnosis, Colors.black),
+                Text(diagnosisInfo.diagnosis),
+                MyDivider(AppLocalizations.of(context)!.medicines, Colors.black),
+
+              ],
+            ),
+          ),
+        ),
+
+      ],
     );
   }
 }
