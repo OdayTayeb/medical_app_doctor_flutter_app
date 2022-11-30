@@ -69,6 +69,9 @@ class _ConsultationsState extends State<Consultations> {
         String user_email = user['email'].toString();
         allConsultations.add(new ConsultationInfo(id, start_at, end_at,patient_complaint,status_name,patient_name,patient_phone,patient_address,user_email));
       }
+    }else{
+      print(response.statusCode);
+      print(response.body);
     }
     setState(() {
       dataIsFetched = true;

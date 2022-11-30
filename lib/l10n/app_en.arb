@@ -113,6 +113,8 @@
     "medicineTakingOptions": "Medicine Taking Options",
     "medicineTakingDuration": "Medicine taking duration in days",
     "thisMedicine": "This Medicine",
-    "medicineEditing": "Medicine Editing"
+    "medicineEditing": "Medicine Editing",
+    "howToTakeMedicine": "Medicine Taking Repetition",
+    "submitTheDiagnosisAndSendIt": "Submit The Diagnosis And Send It"
 
 }

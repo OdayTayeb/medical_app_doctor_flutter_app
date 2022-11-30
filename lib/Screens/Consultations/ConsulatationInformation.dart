@@ -8,6 +8,8 @@ import 'package:bubble/bubble.dart';
 import 'package:http/http.dart' as http;
 import 'package:medical_app/classes/DiagnosisInfo.dart';
 import 'package:medical_app/classes/DiagnosisMedicineInfo.dart';
+import 'package:medical_app/classes/MedicineInfo.dart';
+import 'package:medical_app/classes/MedicineOptionsInfo.dart';
 import 'package:medical_app/classes/RequestAttachmentInfo.dart';
 import 'package:medical_app/classes/RequestInfo.dart';
 import 'package:medical_app/globalWidgets.dart';
@@ -68,7 +70,6 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
         await Future.wait([
           FetchMainConsultation().then((value) => FetchConsultationMedia()),
           FetchRequests(),
-          FetchDiagnosis(),
         ]);
       });
   }
@@ -89,9 +90,6 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     Map JsonResponse = jsonDecode(response.body);
     if (response.statusCode == 200) {
       Map<String, dynamic> x = JsonResponse['data'];
-      // print(x.keys.length);
-      // for (int i=0;i<x.keys.length;i++)
-      //   print(x.keys.elementAt(i).toString()+" "+x[x.keys.elementAt(i)].toString());
       List<dynamic> images = x['photos'];
       for (int i = 0; i < images.length; i++) {
         Map<String, dynamic> oneImage = images[i];
@@ -135,6 +133,8 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       age = (DateTime.now().year - DateTime.parse(birthDate).year).toString();
       Map<String, dynamic> user = x['user'];
       email = user['email'].toString();
+      Map diagnosis = x['prescription'];
+      FetchDiagnosis(diagnosis);
     }
     setState(() {
       mainConsultationIsFetched = true;
@@ -278,44 +278,38 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     return response.bodyBytes;
   }
 
-  Future< void > FetchDiagnosis() async{
-    String? token = await storage.read(key: 'token');
-    http.Response response = await http.get(
-      Uri.parse(URL+ '/api/prescription/' + id),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Accept': '*/*',
-        'Connection': 'keep-alive',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-    if (response.statusCode == 200){
-      Map JsonResponse = jsonDecode(response.body);
-      Map data = JsonResponse['data'];
-      String id = data['id'].toString();
-      String diagnosis = data['advice'].toString();
-      List drugs= data['drug'];
-      List<DiagnosisMedicineInfo> x = [];
-      for (int i=0;i<drugs.length;i++){
-        Map item = drugs[i];
-        String id = item['id'].toString();
-        String medicineId = item['drug_id'].toString();
-        String optionId = item['medication_option_id'].toString();
-        String duration = item['duration'].toString();
-        x.add(DiagnosisMedicineInfo(id,medicineId,optionId,duration));
-      }
-      diagnosisInfo = DiagnosisInfo(id,diagnosis,x);
-      setState(() {
-        diagnosisCreated = true;
-      });
+  void FetchDiagnosis(Map data) {
+    String id = data['id'].toString();
+    String diagnosis = data['advice'].toString();
+    List drugs= data['drug'];
+    List<DiagnosisMedicineInfo> x = [];
+    for (int i=0;i<drugs.length;i++){
+      Map item = drugs[i];
+      String id = item['id'].toString();
+
+      Map medicine = item['drug'];
+      String mId= medicine['id'].toString();
+      String mgenericName= medicine['genericName'].toString();
+      String mtradeName= medicine['tradeName'].toString();
+      String mnote= medicine['note'].toString();
+      Map mcategory= medicine['category'];
+      String categoryName = mcategory['name'].toString();
+      String categoryId = mcategory['id'].toString();
+      MedicineInfo medicineInfo = MedicineInfo(mId, mgenericName, mtradeName, categoryName, categoryId, mnote);
+
+      Map option = item['option'];
+      String oId = option['id'].toString();
+      String oname = option['name'].toString();
+      String ocomment = option['comment'].toString();
+      MedicineOptionsInfo medicineOptionsInfo = MedicineOptionsInfo(oId, oname, ocomment);
+
+      String duration = item['duration'].toString();
+
+      x.add(DiagnosisMedicineInfo(id,medicineInfo,medicineOptionsInfo,duration));
     }
-    else {
-      print(response.statusCode);
-      print(response.body);
-    }
+    diagnosisInfo = DiagnosisInfo(id,diagnosis,x);
     setState(() {
+      diagnosisCreated = true;
       diagnosisIsFetched = true;
     });
   }
@@ -788,7 +782,28 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   }
 
   Widget Diagnosis(){
-    List <Widget> Medicine = [];
+    List <Widget> Medicines = [];
+    for (int i=0;i<diagnosisInfo.medicines.length;i++){
+      Medicines.add(Row(
+          children: [
+            Expanded(flex: 2, child: Text(AppLocalizations.of(context)!.medicineName+": "+diagnosisInfo.medicines[i].medicine.tradeName+"..")),
+            TextButton(onPressed: (){ Navigator.pushNamed(context, '/medicineinfo', arguments: {'info': diagnosisInfo.medicines[i].medicine,}); },
+                    child: Text(AppLocalizations.of(context)!.details),),
+          ],
+        )
+      );
+      Medicines.add(Row(
+          children: [
+            Expanded(flex:2,child: Text(AppLocalizations.of(context)!.howToTakeMedicine+": "+diagnosisInfo.medicines[i].option.name+"..")),
+            TextButton(onPressed: (){ Navigator.pushNamed(context, '/medicineoptioninfo',arguments: {'info': diagnosisInfo.medicines[i].option,});},
+                  child: Text(AppLocalizations.of(context)!.details)),
+          ],
+        )
+      );
+      Medicines.add(Text(AppLocalizations.of(context)!.medicineTakingDuration+": "+diagnosisInfo.medicines[i].duration));
+      if (i!=diagnosisInfo.medicines.length-1)
+        Medicines.add(Divider(color: Colors.black,indent: 15,endIndent: 15,));
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -799,10 +814,20 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
               CircleAvatar(
                 backgroundColor: MyCyanColor,
                 child: IconButton(
-                    onPressed: (){
-                      Navigator.pushNamed(context, '/diagnosismedicinesmanagement',arguments: {
-                        'diagnosis': diagnosisInfo,
-                      });
+                    onPressed: ()async{
+                      try {
+                        DiagnosisInfo res = await Navigator.pushNamed(
+                            context, '/diagnosismedicinesmanagement',
+                            arguments: {
+                              'diagnosis': diagnosisInfo,
+                            }) as DiagnosisInfo;
+                        setState(() {
+                          diagnosisInfo = res;
+                        });
+                      }
+                      catch(e){
+                        print(e);
+                      }
 
                     },
                     icon: Icon(Icons.medical_services,color: Colors.black,)
@@ -834,7 +859,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
               CircleAvatar(
                 backgroundColor: MyCyanColor,
                 child: IconButton(
-                    onPressed: (){},
+                    onPressed: (){submittingDiagnosisAlertDialog(context);},
                     icon: Icon(Icons.done,color: Colors.black,)
                 ),
               ),
@@ -862,7 +887,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
                 MyDivider(AppLocalizations.of(context)!.diagnosis, Colors.black),
                 Text(diagnosisInfo.diagnosis),
                 MyDivider(AppLocalizations.of(context)!.medicines, Colors.black),
-
+                Column(children: Medicines,crossAxisAlignment: CrossAxisAlignment.start,)
               ],
             ),
           ),
@@ -870,6 +895,59 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
 
       ],
     );
+  }
+
+  submittingDiagnosisAlertDialog(BuildContext context) {
+    Widget cancelButton = TextButton(
+      child: Text(AppLocalizations.of(context)!.no),
+      onPressed:  () {
+        Navigator.of(context).pop();
+      },
+    );
+    Widget continueButton = TextButton(
+      child: Text(AppLocalizations.of(context)!.yes),
+      onPressed:  () async {
+        await submitDiagnosis();
+        Navigator.pop(context);
+      },
+    );
+    AlertDialog alert = AlertDialog(
+      title: Text(AppLocalizations.of(context)!.delete),
+      content: Text(AppLocalizations.of(context)!.areYouSureYouWantTo+AppLocalizations.of(context)!.submitTheDiagnosisAndSendIt+"?"),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+    );
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  Future <void> submitDiagnosis() async{
+    String? token = await storage.read(key: 'token');
+    http.Response response = await http.get(
+      Uri.parse(URL + '/api/prescription/' + diagnosisInfo.id +'/submit'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200){
+
+    }
+    else{
+      print(response.statusCode);
+      print(response.body);
+    }
   }
 }
 

@@ -369,6 +369,10 @@ class _addRequestState extends State<addRequest> {
           if (response.statusCode == 201 || response.statusCode == 200){
             Map JsonResponse = jsonDecode(response.body);
             Map item = JsonResponse['data'];
+            // Map x = item;
+            // print(x.keys.length);
+            // for (int i=0;i<x.keys.length;i++)
+            //   print(x.keys.elementAt(i).toString()+" "+x[x.keys.elementAt(i)].toString());
             String id = item['id'].toString();
             String comment = item['comment'];
             List <String> bloodTests = List.empty(growable: true);

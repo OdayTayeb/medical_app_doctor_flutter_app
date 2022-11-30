@@ -113,5 +113,7 @@
     "medicineTakingOptions": "خيارات أخذ الدواء",
     "medicineTakingDuration": "مدة أخذ الدواء بالأيام",
     "thisMedicine": "هذا الدواء",
-    "medicineEditing": "تحرير الأدوية"
+    "medicineEditing": "تحرير الأدوية",
+    "howToTakeMedicine": "كيفية تناول الدواء",
+    "submitTheDiagnosisAndSendIt": "تثبيت التشخيص النهائي وإرساله"
 }

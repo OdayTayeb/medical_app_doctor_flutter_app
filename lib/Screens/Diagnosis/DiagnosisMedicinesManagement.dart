@@ -26,6 +26,7 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
   List<MedicineOptionsInfo> allOptions = List.empty(growable: true);
   Map<String,List<MedicineInfo> > allMedicines = {};
 
+
   bool dataIsFetched = false;
   bool valuesInitialized = false;
 
@@ -34,6 +35,9 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
   List <String> categories = [];
   List<DiagnosisMedicineInfo> diagnosisMedicines = [];
   List<DiagnosisMedicineInfo> initialDiagnosisMedicines = [];
+  List <TextEditingController> durationControllers = [];
+  bool doneIsClicked = false;
+
 
   @override
   void initState() {
@@ -142,9 +146,6 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
         allOptions.add(new MedicineOptionsInfo(id, name, comment));
       }
     }
-    setState(() {
-      dataIsFetched = true;
-    });
   }
 
   @override
@@ -152,10 +153,12 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
     final arguments = (ModalRoute.of(context)?.settings.arguments ?? <String, dynamic>{}) as Map;
     if (arguments['diagnosis']!=null && !valuesInitialized) {
       diagnosisInfo = arguments['diagnosis'];
-      initialDiagnosisMedicines.addAll(diagnosisInfo.medicines);
       diagnosisMedicines.addAll(diagnosisInfo.medicines);
-      for (int i=0;i<diagnosisInfo.medicines.length;i++)
-        categories.add("All Categories");
+      for (int i=0;i<diagnosisInfo.medicines.length;i++) {
+        initialDiagnosisMedicines.add(DiagnosisMedicineInfo.Copy(diagnosisInfo.medicines[i]));
+        categories.add(diagnosisInfo.medicines[i].medicine.category);
+        durationControllers.add(TextEditingController(text: diagnosisInfo.medicines[i].duration));
+      }
       valuesInitialized = true;
     }
     return Scaffold(
@@ -174,7 +177,8 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
                 child: IconButton(onPressed: (){
                   setState(() {
                     categories.add("All Categories");
-                    diagnosisMedicines.add(DiagnosisMedicineInfo("0","","",""));
+                    diagnosisMedicines.add(DiagnosisMedicineInfo.anotherConstructor());
+                    durationControllers.add(TextEditingController(text: ""));
                   });
                 },
                 icon: Icon(Icons.add_circle,size: 60,color: Colors.blueAccent,),
@@ -214,37 +218,48 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
           }
         ),
       floatingActionButton: FloatingActionButton(
-        onPressed: submit,
-        child: Icon(Icons.done),
+        onPressed: doneIsClicked ? null : submit,
+        child: doneIsClicked ? CircularProgressIndicator(color: Colors.white,) : Icon(Icons.done),
       ),
     );
   }
 
   void submit(){
+    setState(() {
+      doneIsClicked = true;
+    });
+    List<Future> future = [];
     for (int i=0;i<diagnosisMedicines.length;i++){
       if (diagnosisMedicines[i].id == "0")
-        addDrug(diagnosisMedicines[i]);
+        future.add(addDrug(diagnosisMedicines[i]));
     }
     for (int j=0;j<initialDiagnosisMedicines.length;j++) {
       bool deleted = true;
       for (int i=0;i<diagnosisMedicines.length;i++) {
-        if (initialDiagnosisMedicines[j].compare(diagnosisMedicines[i])) {
+        if (initialDiagnosisMedicines[j] == diagnosisMedicines[i]) {
           deleted = false;
           break;
         }
         else if (initialDiagnosisMedicines[j].id == diagnosisMedicines[i].id) {
           deleted = false;
-          editDrug(diagnosisMedicines[i]);
+          future.add(editDrug(diagnosisMedicines[i]));
           break;
         }
       }
       if (deleted)
-        deleteDrug(initialDiagnosisMedicines[j]);
+        future.add(deleteDrug(initialDiagnosisMedicines[j]));
     }
-    // TODO: Update DiagnosisInfo.medicines => POP Navigator and return DiagnosisInfo
+    Future.wait(future).then((value){
+      diagnosisInfo.medicines.clear();
+      diagnosisInfo.medicines.addAll(diagnosisMedicines);
+      setState(() {
+        doneIsClicked = false;
+      });
+      Navigator.pop(context,diagnosisInfo);
+    });
   }
 
-  void addDrug(DiagnosisMedicineInfo d) async {
+  Future<void> addDrug(DiagnosisMedicineInfo d) async {
     String? token = await storage.read(key: 'token');
     print(token);
     http.Response response = await http.post(
@@ -258,15 +273,38 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        'medication_option_id': d.optionId,
-        'drug_id': d.medicineId,
+        'medication_option_id': d.option.id,
+        'drug_id': d.medicine.id,
         'duration': d.duration
       })
     );
     Map JsonResponse = jsonDecode(response.body);
-    if (response.statusCode == 200){
-      Map data = JsonResponse['data'];
-      // TODO: update object d with data
+    if (response.statusCode == 201){
+      Map item = JsonResponse['data'];
+      String id = item['id'].toString();
+
+      Map medicine = item['drug'];
+      String mId= medicine['id'].toString();
+      String mgenericName= medicine['genericName'].toString();
+      String mtradeName= medicine['tradeName'].toString();
+      String mnote= medicine['note'].toString();
+      Map mcategory= medicine['category'];
+      String categoryName = mcategory['name'].toString();
+      String categoryId = mcategory['id'].toString();
+      MedicineInfo medicineInfo = MedicineInfo(mId, mgenericName, mtradeName, categoryName, categoryId, mnote);
+
+      Map option = item['option'];
+      String oId = option['id'].toString();
+      String oname = option['name'].toString();
+      String ocomment = option['comment'].toString();
+      MedicineOptionsInfo medicineOptionsInfo = MedicineOptionsInfo(oId, oname, ocomment);
+
+      String duration = item['duration'].toString();
+
+      d.id = id;
+      d.medicine = medicineInfo;
+      d.option = medicineOptionsInfo;
+      d.duration = duration;
     }
     else {
       print(response.body);
@@ -274,11 +312,60 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
     }
   }
 
-  void editDrug(DiagnosisMedicineInfo d){
-    // TODO: edit drug
+  Future<void> editDrug(DiagnosisMedicineInfo d) async{
+    String? token = await storage.read(key: 'token');
+    print(token);
+    http.Response response = await http.put(
+      Uri.parse( URL+ '/api/prescription/'+diagnosisInfo.id+'/drug/'+d.id+'/edit'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'medication_option_id': d.option.id,
+        'drug_id': d.medicine.id,
+        'duration': d.duration
+      })
+    );
+    Map JsonResponse = jsonDecode(response.body);
+    if (response.statusCode == 200){
+      Map item = JsonResponse['data'];
+      String id = item['id'].toString();
+
+      Map medicine = item['drug'];
+      String mId= medicine['id'].toString();
+      String mgenericName= medicine['genericName'].toString();
+      String mtradeName= medicine['tradeName'].toString();
+      String mnote= medicine['note'].toString();
+      Map mcategory= medicine['category'];
+      String categoryName = mcategory['name'].toString();
+      String categoryId = mcategory['id'].toString();
+      MedicineInfo medicineInfo = MedicineInfo(mId, mgenericName, mtradeName, categoryName, categoryId, mnote);
+
+      Map option = item['option'];
+      String oId = option['id'].toString();
+      String oname = option['name'].toString();
+      String ocomment = option['comment'].toString();
+      MedicineOptionsInfo medicineOptionsInfo = MedicineOptionsInfo(oId, oname, ocomment);
+
+      String duration = item['duration'].toString();
+
+      d.id = id;
+      d.medicine = medicineInfo;
+      d.option = medicineOptionsInfo;
+      d.duration = duration;
+    }
+    else {
+      print(response.body);
+      print(response.statusCode);
+    }
   }
 
-  void deleteDrug(DiagnosisMedicineInfo d) async {
+  Future<void> deleteDrug(DiagnosisMedicineInfo d) async {
     String? token = await storage.read(key: 'token');
     print(token);
     http.Response response = await http.delete(
@@ -313,6 +400,8 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
       onPressed:  ()  {
         setState(() {
           diagnosisMedicines.removeAt(index);
+          durationControllers.removeAt(index);
+          categories.removeAt(index);
         });
         Navigator.pop(context);
       },
@@ -359,7 +448,7 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
           }).toList(),
           onChanged: (selectedValue){
             setState(() {
-              diagnosisMedicines[index].medicineId = "";
+              diagnosisMedicines[index].medicine.id = "";
               categories[index] = selectedValue.toString();
 
             });
@@ -386,7 +475,7 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
             filled: true,
           ),
           isExpanded: true,
-          value: diagnosisMedicines[index].medicineId=="" ? null: diagnosisMedicines[index].medicineId,
+          value: diagnosisMedicines[index].medicine.id=="" ? null: diagnosisMedicines[index].medicine.id,
           items: allMedicines[categories[index]]!.map((MedicineInfo items) {
             return DropdownMenuItem(
               value: items.id,
@@ -395,7 +484,7 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
           }).toList(),
           onChanged: (selectedValue){
             setState(() {
-              diagnosisMedicines[index].medicineId = selectedValue.toString();
+              diagnosisMedicines[index].medicine.id = selectedValue.toString();
             });
           },
           dropdownColor: Colors.white,
@@ -420,7 +509,7 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
           filled: true,
         ),
         isExpanded: true,
-        value: diagnosisMedicines[index].optionId=="" ? null: diagnosisMedicines[index].optionId,
+        value: diagnosisMedicines[index].option.id=="" ? null: diagnosisMedicines[index].option.id,
         items: allOptions.map((MedicineOptionsInfo items) {
           return DropdownMenuItem(
             value: items.id,
@@ -429,7 +518,7 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
         }).toList(),
         onChanged: (selectedValue){
           setState(() {
-            diagnosisMedicines[index].optionId = selectedValue.toString();
+            diagnosisMedicines[index].option.id = selectedValue.toString();
           });
         },
         dropdownColor: Colors.white,
@@ -443,8 +532,8 @@ class _DiagnosisMedicinesManagementState extends State<DiagnosisMedicinesManagem
       child: SizedBox(
         width: double.infinity,
         child: Center(
-          child: TextFormField(
-            initialValue: diagnosisMedicines[index].duration,
+          child: TextField(
+            controller: durationControllers[index],
             cursorColor: Colors.black,
             textAlign: TextAlign.start,
             decoration: InputDecoration(
