@@ -6,6 +6,7 @@ import 'package:medical_app/BackEndURL.dart';
 import 'package:medical_app/MyColors.dart';
 import 'package:bubble/bubble.dart';
 import 'package:http/http.dart' as http;
+import 'package:medical_app/classes/ConsultationInfo.dart';
 import 'package:medical_app/classes/DiagnosisInfo.dart';
 import 'package:medical_app/classes/DiagnosisMedicineInfo.dart';
 import 'package:medical_app/classes/MedicineInfo.dart';
@@ -28,7 +29,7 @@ class ConsultationInformation extends StatefulWidget {
 }
 
 class _ConsultationInformationState extends State<ConsultationInformation> {
-  String id = "";
+  late ConsultationInfo consultationInfo;
 
   String email = "";
   String name = "";
@@ -65,7 +66,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
     super.initState();
     Future.delayed(Duration.zero, () {
         final arguments = (ModalRoute.of(context)?.settings.arguments ?? <String, dynamic>{}) as Map;
-        id = arguments['id'];
+        consultationInfo = arguments['consultation'];
       }).then((value) async {
         await Future.wait([
           FetchMainConsultation().then((value) => FetchConsultationMedia()),
@@ -77,7 +78,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   Future<void> FetchMainConsultation() async {
     String? token = await storage.read(key: 'token');
     http.Response response = await http.get(
-      Uri.parse(URL + '/api/consultation/' + id),
+      Uri.parse(URL + '/api/consultation/' + consultationInfo.id),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Accept': '*/*',
@@ -133,8 +134,15 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       age = (DateTime.now().year - DateTime.parse(birthDate).year).toString();
       Map<String, dynamic> user = x['user'];
       email = user['email'].toString();
-      Map diagnosis = x['prescription'];
-      FetchDiagnosis(diagnosis);
+      if (x['prescription']!=null){
+        Map diagnosis = x['prescription'];
+        FetchDiagnosis(diagnosis);
+      }
+      else{
+        setState(() {
+          diagnosisIsFetched = true;
+        });
+      }
     }
     setState(() {
       mainConsultationIsFetched = true;
@@ -210,7 +218,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   Future <void> FetchRequests() async{
     String? token = await storage.read(key: 'token');
     http.Response response = await http.get(
-      Uri.parse(URL+ '/api/' + id + '/req'),
+      Uri.parse(URL+ '/api/' + consultationInfo.id + '/req'),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Accept': '*/*',
@@ -319,6 +327,8 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
 
   @override
   Widget build(BuildContext context) {
+    final arguments = (ModalRoute.of(context)?.settings.arguments ?? <String, dynamic>{}) as Map;
+    consultationInfo = arguments['consultation'];
     return Scaffold(
       backgroundColor: Color(0xffF5F5F5),
       appBar: AppBar(
@@ -328,7 +338,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
         backgroundColor: Colors.blue.shade900,
         elevation: 2,
         title: Text(
-          AppLocalizations.of(context)!.consultation + " " + id,
+          AppLocalizations.of(context)!.consultation + " " + consultationInfo.id,
           style: TextStyle(color: Colors.white),
         ),
       ),
@@ -346,7 +356,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
           : Center(
               child: CircularProgressIndicator(),
             ),
-      bottomNavigationBar: diagnosisIsFetched ? ActionButtons() : null,
+      bottomNavigationBar: diagnosisIsFetched && consultationInfo.status_name !='done' ? ActionButtons() : null,
     );
   }
 
@@ -506,62 +516,83 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       for (int i=0;i<R.radioTests.length;i++)
         content.add(Text('- '+R.radioTests[i]));
     }
+
+    Locale myLocale = Localizations.localeOf(context);
+    Widget actionButtons = Expanded(
+      child: Column(
+          children: [
+            if (!R.isFulfilled)
+              SizedBox(height: 5,),
+            if (!R.isFulfilled)
+              Align(
+                alignment: Alignment.topLeft,
+                child: CircleAvatar(
+                  backgroundColor: MyCyanColor,
+                  child: IconButton(
+                    onPressed: ()  {
+                      editRequest(R);
+                    },
+                    icon: Icon(Icons.edit),
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            if (!R.isFulfilled)
+              SizedBox(height: 10,),
+            if (!R.isFulfilled)
+              Align(
+                alignment: Alignment.topLeft,
+                child: CircleAvatar(
+                  backgroundColor: MyCyanColor,
+                  child: IconButton(
+                    onPressed: () {
+                      showAlertDialog(context,R);
+                    },
+                    icon: Icon(Icons.delete),
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            if (!R.isFulfilled)
+              SizedBox(height: 5,),
+          ]
+      ),
+    );
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (!R.isFulfilled)
-          Align(
-          alignment: Alignment.topLeft,
-          child: CircleAvatar(
-                backgroundColor: MyCyanColor,
-                child: IconButton(
-                  onPressed: ()  {
-                    editRequest(R);
-                  },
-                  icon: Icon(Icons.edit),
-                  color: Colors.black,
-                ),
-          ),
-        ),
-        if (!R.isFulfilled)
-          SizedBox(width: 10,),
-        if (!R.isFulfilled)
-          Align(
-          alignment: Alignment.topLeft,
-          child: CircleAvatar(
-              backgroundColor: MyCyanColor,
-              child: IconButton(
-                onPressed: () {
-                  showAlertDialog(context,R);
-                },
-                icon: Icon(Icons.delete),
-                color: Colors.black,
+        if (myLocale == Locale('ar',''))
+          actionButtons,
+        Expanded(
+          flex: 3,
+          child: Container(
+            child: Bubble(
+              style: BubbleStyle(
+                padding: BubbleEdges.fromLTRB(10, 10, 10, 20),
+              ),
+              alignment: Alignment.topLeft,
+              nip: BubbleNip.leftTop,
+              nipHeight: 10,
+              nipWidth: 15,
+              margin: BubbleEdges.fromLTRB(10, 10, 0, 10),
+              color: MyCyanColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children : content,
               ),
             ),
-        ),
-        Container(
-          width: MediaQuery.of(context).size.width/1.5,
-          child: Bubble(
-            alignment: Alignment.topLeft,
-            nip: BubbleNip.leftTop,
-            nipHeight: 10,
-            nipWidth: 15,
-            margin: BubbleEdges.fromLTRB(10, 10, 0, 10),
-            color: MyCyanColor,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children : content,
-            ),
           ),
         ),
-
+        if (myLocale == Locale('en',''))
+          actionButtons,
       ],
     );
   }
 
   void editRequest(RequestInfo R) async {
     Map Args = {
-      'id': id,
+      'id': consultationInfo.id,
       'index' : requestAndAttachment.length,
       'Request': R,
     };
@@ -615,7 +646,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
   Future <void> deleteRequest(RequestInfo R) async{
     String? token = await storage.read(key: 'token');
     http.Response response = await http.delete(
-      Uri.parse(URL+ '/api/' + id + '/req/' + R.id),
+      Uri.parse(URL+ '/api/' + consultationInfo.id + '/req/' + R.id),
       headers: <String, String>{
         'Content-Type': 'application/json',
         'Accept': '*/*',
@@ -662,7 +693,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
                     try {
                       DiagnosisInfo res = await Navigator.pushNamed(
                           context, '/creatediagnosis', arguments: {
-                        'id': id,
+                        'id': consultationInfo.id,
                       }) as DiagnosisInfo;
                       if (mounted)
                         setState(() {
@@ -695,7 +726,7 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
                   try {
                     RequestInfo res = await Navigator.pushNamed(
                         context, '/addrequest', arguments: {
-                      'id': id,
+                      'id': consultationInfo.id,
                       'index' : requestAndAttachment.length,
                     }) as RequestInfo;
 
@@ -804,68 +835,79 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
       if (i!=diagnosisInfo.medicines.length-1)
         Medicines.add(Divider(color: Colors.black,indent: 15,endIndent: 15,));
     }
+    Locale myLocale = Localizations.localeOf(context);
+    Widget actionButtons = Expanded(
+      child: Column(
+        children: [
+          if (consultationInfo.status_name != 'done')
+            CircleAvatar(
+              backgroundColor: MyCyanColor,
+              child: IconButton(
+                  onPressed: ()async{
+                    try {
+                      DiagnosisInfo res = await Navigator.pushNamed(
+                          context, '/diagnosismedicinesmanagement',
+                          arguments: {
+                            'diagnosis': diagnosisInfo,
+                          }) as DiagnosisInfo;
+                      setState(() {
+                        diagnosisInfo = res;
+                      });
+                    }
+                    catch(e){
+                      print(e);
+                    }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            children: [
-              CircleAvatar(
-                backgroundColor: MyCyanColor,
-                child: IconButton(
-                    onPressed: ()async{
-                      try {
-                        DiagnosisInfo res = await Navigator.pushNamed(
-                            context, '/diagnosismedicinesmanagement',
-                            arguments: {
-                              'diagnosis': diagnosisInfo,
-                            }) as DiagnosisInfo;
+                  },
+                  icon: Icon(Icons.medical_services,color: Colors.black,)
+              ),
+            ),
+
+          if (consultationInfo.status_name != 'done')
+            SizedBox(height: 15,),
+
+          if (consultationInfo.status_name != 'done')
+            CircleAvatar(
+              backgroundColor: MyCyanColor,
+              child: IconButton(
+                  onPressed: () async{
+                    try {
+                      DiagnosisInfo res = await Navigator.pushNamed(context, '/creatediagnosis', arguments: {
+                        'id': consultationInfo.id,
+                        'diagnosis': diagnosisInfo,
+                      }) as DiagnosisInfo;
+                      if (mounted)
                         setState(() {
                           diagnosisInfo = res;
                         });
-                      }
-                      catch(e){
-                        print(e);
-                      }
+                    }
+                    catch(e){
+                      print(e);
+                    }
+                  },
+                  icon: Icon(Icons.edit,color: Colors.black,)
+              ),
+            ),
 
-                    },
-                    icon: Icon(Icons.medical_services,color: Colors.black,)
-                ),
+          if (consultationInfo.status_name != 'done')
+            SizedBox(height: 15,),
+
+          if (consultationInfo.status_name != 'done')
+            CircleAvatar(
+              backgroundColor: MyCyanColor,
+              child: IconButton(
+                  onPressed: (){submittingDiagnosisAlertDialog(context);},
+                  icon: Icon(Icons.done,color: Colors.black,)
               ),
-              SizedBox(height: 15,),
-              CircleAvatar(
-                backgroundColor: MyCyanColor,
-                child: IconButton(
-                    onPressed: () async{
-                      try {
-                        DiagnosisInfo res = await Navigator.pushNamed(context, '/creatediagnosis', arguments: {
-                          'id': id,
-                          'diagnosis': diagnosisInfo,
-                        }) as DiagnosisInfo;
-                        if (mounted)
-                          setState(() {
-                            diagnosisInfo = res;
-                          });
-                      }
-                      catch(e){
-                        print(e);
-                      }
-                    },
-                    icon: Icon(Icons.edit,color: Colors.black,)
-                ),
-              ),
-              SizedBox(height: 15,),
-              CircleAvatar(
-                backgroundColor: MyCyanColor,
-                child: IconButton(
-                    onPressed: (){submittingDiagnosisAlertDialog(context);},
-                    icon: Icon(Icons.done,color: Colors.black,)
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+        ],
+      ),
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if(myLocale ==Locale('ar',''))
+          actionButtons,
         Expanded(
           flex: 5,
           child: Bubble(
@@ -892,7 +934,8 @@ class _ConsultationInformationState extends State<ConsultationInformation> {
             ),
           ),
         ),
-
+        if(myLocale ==Locale('en',''))
+          actionButtons,
       ],
     );
   }

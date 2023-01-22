@@ -148,6 +148,10 @@ class _CreateDiagnosisState extends State<CreateDiagnosis> {
             }
             Navigator.pop(context,res);
           }
+          else{
+            print(response.statusCode);
+            print(response.body);
+          }
 
           setState(() {
             doneButtonClicked = false;

@@ -105,7 +105,7 @@ class _ConsultationsState extends State<Consultations> {
                 return InkWell(
                   onTap: (){
                     Navigator.pushNamed(context, '/consultationinformation', arguments: {
-                      'id': allConsultations[index].id,
+                      'consultation': allConsultations[index],
                     });
                   },
                   child: Dismissible(
